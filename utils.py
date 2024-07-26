@@ -1,5 +1,69 @@
+import torch.nn as nn
 import torch
 import os
+
+def frequency_to_cents(frequencies, reference_frequency=10):
+    # Avoid log of zero by setting minimum frequency to a small positive value
+    min_frequency = 1e-6
+    frequencies = torch.clamp(frequencies, min=min_frequency)
+    
+    # Convert frequency to cents
+    cents = 1200 * torch.log2(frequencies / reference_frequency)
+    
+    return cents
+
+def cent_to_bin_mapping(cents_values, dtype=torch.float32):
+    # Define the mapping parameters
+    num_bins = 360
+    min_cents = 1200 * torch.log2(torch.tensor(32.70/10))
+    max_cents = 1200 * torch.log2(torch.tensor(3951.066/10)) + min_cents
+    bin_edges = torch.linspace(min_cents, max_cents, num_bins, dtype=dtype, device=cents_values.device)
+    
+    # Compute the bin index for each cent value
+    # Find the closest bin edge for each cent value
+    bin_indices = torch.bucketize(cents_values, bin_edges, right=True)
+    
+    # Ensure bin indices are within bounds
+    bin_indices = torch.clamp(bin_indices, min=0, max=num_bins-1)
+    
+    return bin_indices
+
+def get_activation_from_label(labels, center=True, step_size=10, batch_size=128):
+    """     
+    labels : (N,) or (C, N)
+    """
+    
+    if len(labels.shape) == 2:
+        if labels.shape[0] == 1:
+            labels = labels[0]
+        else:
+            labels = labels.mean(dim=0) # make mono
+
+    def get_frame(labels, step_size, center):
+        if center:
+            labels = nn.functional.pad(labels, pad=(512, 512))
+        # make 1024-sample frames of the labels with hop length of 10 milliseconds
+        hop_length = int(16000 * step_size / 1000)
+        n_frames = 1 + (len(labels) - 1024) // hop_length
+        frames = torch.as_strided(labels, size=(1024, n_frames), stride=(1, hop_length))
+        frames = frames.transpose(0, 1).clone()
+    
+        return frames
+        
+    frames = get_frame(labels, step_size, center)
+    activation_stack = []
+    
+    for i in range(0, len(frames), batch_size):
+        f = frames[i:min(i+batch_size, len(frames))]
+        act = torch.zeros([f.shape[0],360])
+        mean_f = f.mean(dim=-1)
+        bins = cent_to_bin_mapping(mean_f)
+        for idx, a in enumerate(act):
+            act[idx,bins[idx]]=1
+
+        activation_stack.append(act.cpu())
+    activation = torch.cat(activation_stack, dim=0)
+    return activation
 
 def download_weights(model_capacity):
     try:
@@ -25,7 +89,7 @@ def to_local_average_cents(salience, center=None):
     if not hasattr(to_local_average_cents, 'cents_mapping'):
         # The bin number-to-cents mapping
         to_local_average_cents.cents_mapping = (
-                torch.linspace(0, 7180, 360, dtype=salience.dtype, device=salience.device) + 1997.3794084376191)
+                torch.linspace(0, 1200 * torch.log2(torch.tensor(3951.066/10)), 360, dtype=salience.dtype, device=salience.device) + 1200 * torch.log2(torch.tensor(32.70/10)))
 
     if salience.ndim == 1:
         if center is None:
@@ -84,4 +148,5 @@ def to_freq(activation, viterbi=False):
 
     frequency = 10 * 2 ** (cents / 1200)
     frequency[torch.isnan(frequency)] = 0
+    frequency = torch.where(frequency < 32.71, torch.tensor(1e-7 ,device=frequency.device), frequency)
     return frequency
