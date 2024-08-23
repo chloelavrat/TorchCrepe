@@ -1,5 +1,6 @@
 
 import torch
+import os
 import torchaudio
 import torch.nn as nn
 
@@ -71,9 +72,19 @@ class Crepe(nn.Module):
 
         # load model
         self.device = device
+        self.load_weight(model_capacity)
 
         # Set the model to evaluation mode by default
         self.eval()
+
+    def load_weight(self, model_capacity):
+        package_dir = os.path.dirname(os.path.realpath(__file__))
+        filename = "crepe-{}.pth".format(model_capacity)
+        try:
+            self.load_state_dict(torch.load(os.path.join(
+                package_dir, filename), map_location=torch.device(self.device), weights_only=True))
+        except:
+            print(f"{filename} Not found.")
 
     def forward(self, x):
         x = x.view(x.shape[0], 1, -1, 1)
@@ -115,7 +126,7 @@ class Crepe(nn.Module):
             act = self.forward(f)
             activation_stack.append(act.cpu())
         activation = torch.cat(activation_stack, dim=0)
-        
+
         return activation
 
     def predict(self, audio, sr, center=True, step_size=10, batch_size=128):
