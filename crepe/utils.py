@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+
 def get_frame(audio, step_size, center):
     if center:
         audio = nn.functional.pad(audio, pad=(512, 512))
@@ -18,7 +19,8 @@ def get_frame(audio, step_size, center):
     frames -= mean
     frames /= std
     return frames
-    
+
+
 def to_local_average_cents(salience, center=None):
     """
     Find the weighted average cents near the argmax bin
@@ -27,7 +29,7 @@ def to_local_average_cents(salience, center=None):
     if not hasattr(to_local_average_cents, 'cents_mapping'):
         # The bin number-to-cents mapping
         to_local_average_cents.cents_mapping = (
-                torch.linspace(0, 1200 * torch.log2(torch.tensor(3951.066/10)), 360, dtype=salience.dtype, device=salience.device) + 1200 * torch.log2(torch.tensor(32.70/10)))
+            torch.linspace(0, 1200 * torch.log2(torch.tensor(3951.066/10)), 360, dtype=salience.dtype, device=salience.device) + 1200 * torch.log2(torch.tensor(32.70/10)))
 
     if salience.ndim == 1:
         if center is None:
@@ -41,11 +43,32 @@ def to_local_average_cents(salience, center=None):
         return product_sum / weight_sum
     elif salience.ndim == 2:
         return torch.stack([to_local_average_cents(salience[i, :]) for i in range(salience.shape[0])])
-    
-def activation_to_freq(activations):
+
+
+def activation_to_frequency(activations):
     cents = to_local_average_cents(activations)
     frequency = 10 * 2 ** (cents / 1200)
     frequency[torch.isnan(frequency)] = 0
-    frequency = torch.where(frequency < 32.71, torch.tensor(1e-7 ,device=frequency.device), frequency)
+    frequency = torch.where(frequency < 32.71, torch.tensor(
+        1e-7, device=frequency.device), frequency)
     return frequency
-    
+
+
+def frequency_to_activation(frequencies, num_bins=360):
+    # Convert frequency to cents
+    cents = 1200 * torch.log2(frequencies / 10)
+
+    # Create the cents-to-bin mapping if it doesn't already exist
+    if not hasattr(frequency_to_activation, 'cents_mapping'):
+        frequency_to_activation.cents_mapping = (
+            torch.linspace(0, 1200 * torch.log2(torch.tensor(3951.066/10)), num_bins, dtype=frequencies.dtype, device=frequencies.device) + 1200 * torch.log2(torch.tensor(32.70/10)))
+
+    # Initialize activation map with zeros; expects batch input for frequencies
+    activations = torch.zeros(frequencies.shape[0], num_bins, dtype=frequencies.dtype, device=frequencies.device)
+
+    # Find the closest bin to the calculated cents value for each frequency in the batch
+    for i in range(frequencies.shape[0]):
+        closest_bin = torch.argmin(torch.abs(frequency_to_activation.cents_mapping - cents[i]))
+        activations[i, closest_bin] = 1.0
+
+    return activations

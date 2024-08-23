@@ -3,7 +3,8 @@ import torch
 import torchaudio
 import torch.nn as nn
 
-from crepe.utils import get_frame, activation_to_freq
+from crepe.utils import get_frame, activation_to_frequency
+
 
 class ConvBlock(nn.Module):
     def __init__(self, out_channels, kernel_width, stride, in_channels):
@@ -31,7 +32,8 @@ class ConvBlock(nn.Module):
 
     def forward(self, x):
         return self.layer(x)
-    
+
+
 class Crepe(nn.Module):
     def __init__(self, model_capacity="full", device='cpu'):
         super(Crepe, self).__init__()
@@ -72,7 +74,7 @@ class Crepe(nn.Module):
 
         # Set the model to evaluation mode by default
         self.eval()
-        
+
     def forward(self, x):
         x = x.view(x.shape[0], 1, -1, 1)
 
@@ -88,21 +90,21 @@ class Crepe(nn.Module):
         x = torch.sigmoid(x)
 
         return x
-    
+
     def get_activation(self, audio, sr, center=True, step_size=10, batch_size=128):
-        
+
         # resample to 16kHz if needed
         if sr != 16000:
             rs = torchaudio.transforms.Resample(sr, 16000)
             audio = rs(audio)
-        
+
         # make mono if needed
         if len(audio.shape) == 2:
             if audio.shape[0] == 1:
                 audio = audio[0]
             else:
                 audio = audio.mean(dim=0)
-                
+
         frames = get_frame(audio, step_size, center)
         activation_stack = []
         device = self.linear.weight.device
@@ -113,14 +115,13 @@ class Crepe(nn.Module):
             act = self.forward(f)
             activation_stack.append(act.cpu())
         activation = torch.cat(activation_stack, dim=0)
+        
         return activation
-    
+
     def predict(self, audio, sr, center=True, step_size=10, batch_size=128):
         activation = self.get_activation(
             audio, sr, batch_size=batch_size, step_size=step_size)
-        frequency = activation_to_freq(activation)
+        frequency = activation_to_frequency(activation)
         confidence = activation.max(dim=1)[0]
         time = torch.arange(confidence.shape[0]) * step_size / 1000.0
         return time, frequency, confidence, activation
-        
-        
