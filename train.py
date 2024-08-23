@@ -167,7 +167,8 @@ if __name__ == "__main__":
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            torch.save(model.state_dict(), f'crepe_{model_capacity}_best.pth')
+            torch.save(model.state_dict(),
+                       f'crepe/crepe_{model_capacity}_best.pth')
             epochs_without_improvement = 0
         else:
             epochs_without_improvement += 1
@@ -177,5 +178,5 @@ if __name__ == "__main__":
             break
 
     # save model
-    torch.save(model.state_dict(), f'crepe_{model_capacity}_final.pth')
+    torch.save(model.state_dict(), f'crepe/crepe_{model_capacity}_final.pth')
     wandb.finish()

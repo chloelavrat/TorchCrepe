@@ -6,6 +6,7 @@ import torchaudio
 import glob
 import json
 from torch.utils.data import Dataset, ConcatDataset
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class MIR1KDataset(Dataset):
@@ -134,6 +135,10 @@ class NSynthDataset(Dataset):
         self.infos = sorted(glob.glob(os.path.join(
             root_dir, "*/*.json"), recursive=True))
 
+        # Precompute a mapping from filenames to their paths
+        self.filename_to_path = {os.path.splitext(os.path.basename(f))[
+            0]: f for f in self.files}
+
         # Load all metadata
         self.data = self._load_metadata()
 
@@ -149,8 +154,20 @@ class NSynthDataset(Dataset):
         return data
 
     def __len__(self):
-        # Adjust length to account for grouping of samples without overlap
         return len(self.files) // self.n_samples
+
+    def _load_audio_and_pitch(self, filename):
+        audio_path = self.filename_to_path[filename]
+        audio, sr = torchaudio.load(audio_path)
+        audio = torch.mean(audio, dim=0)  # Convert to mono
+
+        # Retrieve MIDI pitch and calculate frequency
+        midi_pitch = self.file_to_data.get(filename, {}).get(
+            "pitch", 69)  # Default to 69 if not found
+        pitch = 440 * 2 ** ((midi_pitch - 69) / 12)
+        pitch = torch.ones([audio.shape[0] // 40]) * pitch
+
+        return audio, pitch
 
     def __getitem__(self, idx):
         start_idx = idx * self.n_samples
@@ -161,30 +178,20 @@ class NSynthDataset(Dataset):
             raise IndexError(
                 "Index out of bounds for the requested group of samples.")
 
-        # List to hold the audio and pitch data
         audio_list = []
         pitch_list = []
 
-        for i in range(start_idx, end_idx):
-            filename = [*self.data][i]
-            audio_path = next(s for s in self.files if filename in s)
+        filenames = list(self.data.keys())[start_idx:end_idx]
 
-            audio, sr = torchaudio.load(audio_path)
-            audio = torch.mean(audio, dim=0)  # Convert to mono
+        with ThreadPoolExecutor() as executor:
+            future_to_filename = {executor.submit(
+                self._load_audio_and_pitch, filename): filename for filename in filenames}
+            for future in as_completed(future_to_filename):
+                audio, pitch = future.result()
+                audio_list.append(audio)
+                pitch_list.append(pitch)
 
-            midi_pitch = self.file_to_data.get(filename, {}).get(
-                "pitch", 69)  # Default to 69 if not found
-            pitch = 440 * 2**((midi_pitch - 69) / 12)
-            pitch = torch.ones([audio.shape[0] // 40]) * pitch
-
-            audio_list.append(audio)
-            pitch_list.append(pitch)
-
-        # Concatenate all audio and pitch tensors
         audio = torch.cat(audio_list)
         pitch = torch.cat(pitch_list)
 
         return audio, pitch
-
-    def test(self):
-        print(self.data)
