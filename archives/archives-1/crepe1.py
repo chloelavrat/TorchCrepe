@@ -36,6 +36,7 @@ class CREPE(nn.Module):
     def __init__(self, model_capacity="full"):
         super().__init__()
 
+        self.model_capacity = model_capacity
         capacity_multiplier = {
             'tiny': 4, 'small': 8, 'medium': 16, 'large': 24, 'full': 32
         }[model_capacity]
