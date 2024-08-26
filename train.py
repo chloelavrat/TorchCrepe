@@ -4,7 +4,7 @@ from tqdm import tqdm
 import torch.nn.functional as F
 from crepe.utils import frequency_to_activation
 from crepe.model import Crepe
-import wandb
+# import wandb
 
 
 def epoch_step(model, audio, labels, sr, device):
@@ -87,10 +87,10 @@ if __name__ == "__main__":
     from crepe.dataset import MIR1KDataset, Back10Dataset, NSynthDataset
     from torch.utils.data import DataLoader, random_split, ConcatDataset
 
-    model_capacity = 'tiny'
+    model_capacity = 'small'
     learning_rate = 0.0002
     num_epoch = 50000
-    num_batches_per_epoch = 1
+    num_batches_per_epoch = 8
     sr = 16000
     max_epochs_without_improvement = 32
 
@@ -100,10 +100,10 @@ if __name__ == "__main__":
     model = Crepe(model_capacity=model_capacity).to(device)
 
     # dataset
-    # mir_1k = MIR1KDataset(root_dir="./dataset/MIR-1K")
+    mir_1k = MIR1KDataset(root_dir="./dataset/MIR-1K")
     back10 = Back10Dataset(root_dir="./dataset/Bach10")
-    # nsynth = NSynthDataset(root_dir="./dataset/Nsynth-mixed")
-    dataset = ConcatDataset([back10])
+#    nsynth = NSynthDataset(root_dir="./dataset/Nsynth-mixed", n_samples=30)
+    dataset = ConcatDataset([back10, mir_1k])
 
     # set train, validation dataset sizes
     train_size = int(0.8 * len(dataset))
@@ -127,12 +127,12 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # wandb init
-    wandb.init(project="Crepe tiny", config={
-        "learning_rate": learning_rate,
-        "architecture": "CNN",
-        "dataset": "MIR-1K + bach10",
-        "epochs": num_epoch,
-    })
+    # wandb.init(project="Crepe tiny", config={
+    #     "learning_rate": learning_rate,
+    #     "architecture": "CNN",
+    #     "dataset": "MIR-1K + bach10",
+    #     "epochs": num_epoch,
+    # })
 
     best_val_loss = float('inf')
     epochs_without_improvement = 0
@@ -149,7 +149,7 @@ if __name__ == "__main__":
                 device
             )
             train_loss += tmp_loss
-            wandb.log({"train_loss": tmp_loss})
+            # wandb.log({"train_loss": tmp_loss})
         # compute train loss
         train_loss /= num_batches_per_epoch
 
@@ -161,9 +161,8 @@ if __name__ == "__main__":
             device
         )
 
-        print(f'Epoch {epoch}, Train Loss: {
-              train_loss:.4f}, Val Loss: {val_loss:.4f}')
-        wandb.log({"val_loss": val_loss})
+        print(f'Epoch {epoch}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}')
+        # wandb.log({"val_loss": val_loss})
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
@@ -179,4 +178,4 @@ if __name__ == "__main__":
 
     # save model
     torch.save(model.state_dict(), f'crepe/crepe_{model_capacity}_final.pth')
-    wandb.finish()
+    # wandb.finish()
