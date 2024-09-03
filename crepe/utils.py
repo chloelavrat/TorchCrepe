@@ -13,7 +13,8 @@ def get_frame(audio, step_size, center):
 
     Args:
         audio (Tensor): The input audio signal.
-        step_size (float): The time step size in milliseconds. Audio will be divided into 1024-sample frames with this hop length.
+        step_size (float): The time step size in milliseconds. Audio will be divided into
+        1024-sample frames with this hop length.
         center (bool): If True, pads the audio to have equal number of samples on both sides.
 
     Returns:
@@ -54,7 +55,10 @@ def to_local_average_cents(salience, center=None):
     if not hasattr(to_local_average_cents, 'cents_mapping'):
         # The bin number-to-cents mapping
         to_local_average_cents.cents_mapping = (
-            torch.linspace(0, 1200 * torch.log2(torch.tensor(3951.066/10)), 360, dtype=salience.dtype, device=salience.device) + 1200 * torch.log2(torch.tensor(32.70/10)))
+            torch.linspace(0,
+                           1200 * torch.log2(torch.tensor(3951.066/10)),
+                           360, dtype=salience.dtype,
+                           device=salience.device) + 1200 * torch.log2(torch.tensor(32.70/10)))
 
     if salience.ndim == 1:
         if center is None:
@@ -97,7 +101,8 @@ def frequency_to_activation(frequencies, num_bins=360):
         num_bins (int, optional): The number of bins in the activation map. Defaults to 360.
 
     Returns:
-        torch.Tensor: A binary activation map where each row corresponds to the frequency in the corresponding row of `frequencies`.
+        torch.Tensor: A binary activation map where each row corresponds to the frequency in the corresponding
+        row of `frequencies`.
     """
     # Convert frequency to cents
     cents = 1200 * torch.log2(frequencies / 10)
@@ -105,7 +110,10 @@ def frequency_to_activation(frequencies, num_bins=360):
     # Create the cents-to-bin mapping if it doesn't already exist
     if not hasattr(frequency_to_activation, 'cents_mapping'):
         frequency_to_activation.cents_mapping = (
-            torch.linspace(0, 1200 * torch.log2(torch.tensor(3951.066/10)), num_bins, dtype=frequencies.dtype, device=frequencies.device) + 1200 * torch.log2(torch.tensor(32.70/10)))
+            torch.linspace(0,
+                           1200 * torch.log2(torch.tensor(3951.066/10)),
+                           num_bins, dtype=frequencies.dtype,
+                           device=frequencies.device) + 1200 * torch.log2(torch.tensor(32.70/10)))
 
     # Initialize activation map with zeros; expects batch input for frequencies
     activations = torch.zeros(

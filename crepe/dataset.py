@@ -164,8 +164,8 @@ class Back10Dataset(Dataset):
                 if line.strip():  # Ignore empty lines
                     # Parse the line
                     parts = line.strip().split()
-                    time_audio = int(parts[0])
-                    time_midi = int(parts[1])
+                    # time_audio = int(parts[0])
+                    # time_midi = int(parts[1])
                     midi_pitch = int(parts[2])
                     channel = int(parts[3])
 
