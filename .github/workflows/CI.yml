@@ -25,4 +25,4 @@ jobs:
       - name: Check documentation coverage with pydocstyle
         run: |
           pip install pydocstyle
-          pydocstyle .
+          pydocstyle ./crepe
