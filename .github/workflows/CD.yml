@@ -5,7 +5,7 @@ on:
 #    branches:
 #      - main
     tags:
-      - '*.*.*'  # Adjust this pattern to match your tag format
+      - 'v*.*.*'  # Adjust this pattern to match your tag format
 
 
 jobs:
