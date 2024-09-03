@@ -1,3 +1,5 @@
+"""This file contains various dataloader for training and processing audio data and labels."""
+
 from torch.utils.data import Dataset
 import os
 import torch
@@ -9,7 +11,29 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class MIR1KDataset(Dataset):
+    """
+    MIR-1K Dataset.
+
+    Args:
+        Dataset (Dataset): from torch.utils.data import Dataset
+    """
+
     def __init__(self, root_dir):
+        """
+        Create an instance of the MIR-1K dataset.
+
+        This class loads and prepares the data from the MIR-1K dataset,
+        which consists of audio files with corresponding pitch labels.
+
+        Attributes:
+            root_dir (str): The root directory containing the MIR-1K dataset.
+
+        Methods:
+            __init__: Initializes the dataset by loading the audio files and pitch labels.
+            __len__: Returns the total number of samples in the dataset.
+            __getitem__: Loads a single sample from the dataset, consisting of an audio file
+                and its corresponding pitch label.
+        """
         self.root_dir = root_dir
         # self.labels = [f.replace('.wav', '.txt') for f in self.files]
         self.files = sorted(glob.glob(os.path.join(
@@ -18,9 +42,31 @@ class MIR1KDataset(Dataset):
             self.root_dir+"/PitchLabel", f"*.pv")))
 
     def __len__(self):
+        """
+        Retrieve the total number of samples in the dataset.
+
+        Returns:
+            int: The total number of samples in the dataset.
+        """
         return len(self.files)
 
     def __getitem__(self, idx):
+        """
+        Retrieve a single sample from the dataset.
+
+        Args:
+            idx (int): The index of the sample to retrieve.
+
+        Returns:
+            tuple: A tuple containing the audio file and its corresponding pitch label,
+                where the audio is a tensor representing the audio waveform, and the
+                pitch label is a tensor containing the pitch values for each frame.
+
+        Note:
+            The returned audio tensor has shape (1, num_frames), where num_frames is the
+            number of frames in the original audio file. The returned pitch label tensor has
+            shape (num_frames,), containing one pitch value per frame.
+        """
         audio_path = os.path.abspath(self.files[idx])
         label_path = self.labels[idx]
 
@@ -35,7 +81,29 @@ class MIR1KDataset(Dataset):
 
 
 class Back10Dataset(Dataset):
+    """
+    Bach10 Dataset.
+
+    Args:
+        Dataset (Dataset): from torch.utils.data import Dataset
+    """
+
     def __init__(self, root_dir):
+        """
+        Create an instance of the Bach10 dataset.
+
+        This class loads and prepares the data from the Bach10 dataset,
+        which consists of audio files with corresponding pitch labels.
+
+        Attributes:
+            root_dir (str): The root directory containing the Bach10 dataset.
+
+        Methods:
+            __init__: Initializes the dataset by loading the audio files and pitch labels.
+            __len__: Returns the total number of samples in the dataset.
+            __getitem__: Loads a single sample from the dataset, consisting of an audio file
+                and its corresponding pitch label.
+        """
         self.root_dir = root_dir
         self.files_violin = sorted(glob.glob(os.path.join(
             self.root_dir, f"*/*violin.wav"), recursive=True))
@@ -108,9 +176,32 @@ class Back10Dataset(Dataset):
         return data
 
     def __len__(self):
+        """
+        Retrieve the total number of samples in the dataset.
+
+        Returns:
+            int: The total number of samples in the dataset.
+        """
         return self.len
 
     def __getitem__(self, idx):
+        """
+        Retrieve a single sample from the dataset.
+
+        Args:
+            idx (int): The index of the sample to retrieve.
+
+        Returns:
+            tuple: A tuple containing the audio file and its corresponding pitch label,
+                where the audio is a tensor representing the audio waveform, and the
+                pitch label is a tensor containing the pitch values for each frame.
+                (audio, label)
+
+        Note:
+            The returned audio tensor has shape (1, num_frames), where num_frames is the
+            number of frames in the original audio file. The returned pitch label tensor has
+            shape (num_frames,), containing one pitch value per frame.
+        """
         instr_type = self.dataset_orga[idx]['number']
         audio_path = self.dataset_orga[idx]['audio_path']
         label_path = self.dataset_orga[idx]['label_path']
@@ -124,7 +215,29 @@ class Back10Dataset(Dataset):
 
 
 class NSynthDataset(Dataset):
+    """
+    Nsynth Dataset.
+
+    Args:
+        Dataset (Dataset): from torch.utils.data import Dataset
+    """
+
     def __init__(self, root_dir, n_samples=1):
+        """
+        Create an instance of the NSynth dataset.
+
+        This class loads and prepares the data from the NSynth dataset,
+        which consists of audio files with corresponding pitch labels.
+
+        Attributes:
+            root_dir (str): The root directory containing the NSynth dataset.
+
+        Methods:
+            __init__: Initializes the dataset by loading the audio files and pitch labels.
+            __len__: Returns the total number of samples in the dataset.
+            __getitem__: Loads a single sample from the dataset, consisting of an audio file
+                and its corresponding pitch label.
+        """
         self.root_dir = root_dir
         self.n_samples = n_samples
 
@@ -153,6 +266,12 @@ class NSynthDataset(Dataset):
         return data
 
     def __len__(self):
+        """
+        Retrieve the total number of samples in the dataset.
+
+        Returns:
+            int: The total number of samples in the dataset.
+        """
         return len(self.files) // self.n_samples
 
     def _load_audio_and_pitch(self, filename):
@@ -169,6 +288,23 @@ class NSynthDataset(Dataset):
         return audio, pitch
 
     def __getitem__(self, idx):
+        """
+        Retrieve a single sample from the dataset.
+
+        Args:
+            idx (int): The index of the sample to retrieve.
+
+        Returns:
+            tuple: A tuple containing the audio file and its corresponding pitch label,
+                where the audio is a tensor representing the audio waveform, and the
+                pitch label is a tensor containing the pitch values for each frame.
+                (audio, label)
+
+        Note:
+            The returned audio tensor has shape (1, num_frames), where num_frames is the
+            number of frames in the original audio file. The returned pitch label tensor has
+            shape (num_frames,), containing one pitch value per frame.
+        """
         start_idx = idx * self.n_samples
         end_idx = start_idx + self.n_samples
 

@@ -1,3 +1,5 @@
+"""This file the code necessary to train the Crepe model."""
+
 import torch
 import torch.nn as nn
 from tqdm import tqdm
@@ -7,6 +9,19 @@ from crepe.model import Crepe
 
 
 def epoch_step(model, audio, labels, sr, device):
+    """
+    Compute model and label activations for a given batch.
+
+    Args:
+        model: The Crepe model to use.
+        audio: A tensor of audio data.
+        labels: A tensor of label data.
+        sr: The sample rate of the audio data.
+        device: The device (CPU or GPU) to move the tensors to.
+
+    Returns:
+        A tuple containing the label activations and the model activations.
+    """
     # send tensor to device
     audio = audio.to(device)
     labels = labels.to(device)
@@ -25,6 +40,19 @@ def epoch_step(model, audio, labels, sr, device):
 
 
 def train_epoch(model, optimizer, dataloader, sr, device):
+    """
+    Train the Crepe model for one epoch.
+
+    Args:
+        model: The Crepe model to train.
+        optimizer: The optimizer to use.
+        dataloader: A DataLoader containing the training data.
+        sr: The sample rate of the audio data.
+        device: The device (CPU or GPU) to move the tensors to.
+
+    Returns:
+        The average loss over all batches in this epoch.
+    """
     model.train()  # Set the model to training mode
     running_loss = 0.0
 
@@ -57,6 +85,18 @@ def train_epoch(model, optimizer, dataloader, sr, device):
 
 
 def validate_epoch(model, dataloader, sr, device):
+    """
+    Validate the Crepe model for one epoch.
+
+    Args:
+        model: The Crepe model to validate.
+        dataloader: A DataLoader containing the validation data.
+        sr: The sample rate of the audio data.
+        device: The device (CPU or GPU) to move the tensors to.
+
+    Returns:
+        The average loss over all batches in this epoch.
+    """
     model.eval()  # Set the model to evaluation mode
     running_loss = 0.0
     criterion = nn.BCELoss()  # Initialize the loss function

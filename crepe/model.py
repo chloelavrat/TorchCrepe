@@ -1,3 +1,4 @@
+"""This file contains the Crepe model and its block."""
 
 import torch
 import os
@@ -8,7 +9,29 @@ from crepe.utils import get_frame, activation_to_frequency
 
 
 class ConvBlock(nn.Module):
+    """
+    Convolutional block model.
+
+    Args:
+        nn.Module (nn.Module): import torch.nn as nn
+    """
+
     def __init__(self, out_channels, kernel_width, stride, in_channels):
+        """
+        Convolutional block with one or more convolutional layers.
+
+        Args:
+            out_channels (int): The number of output channels.
+            kernel_width (int): The width of the convolutional kernel.
+            stride (tuple, int): The stride for each dimension.
+            in_channels (int): The number of input channels.
+
+        Attributes:
+            layer (nn.Sequential): A sequential container holding the block's layers.
+
+        Methods:
+            forward(x): Passes an input tensor `x` through the block.
+        """
         super(ConvBlock, self).__init__()
 
         # Calculate padding for the height dimension (kernel width)
@@ -32,11 +55,49 @@ class ConvBlock(nn.Module):
         )
 
     def forward(self, x):
+        """
+        Pass an input tensor `x` through the network.
+
+        Args:
+            x (torch.Tensor): The input tensor to pass through the network.
+
+        Returns:
+            torch.Tensor: The output of the network.
+        """
         return self.layer(x)
 
 
 class Crepe(nn.Module):
+    """
+    Crepe model.
+
+    Args:
+        nn.Module (nn.Module): import torch.nn as nn
+    """
+
     def __init__(self, model_capacity="full", device='cpu'):
+        """
+        CREPE model for pitch estimation.
+
+        Args:
+            model_capacity (str): The capacity of the network ('tiny', 'small', 'medium', 'large', or 'full').
+            device (str): The device to run the model on ('cpu', 'gpu', 'mps').
+
+        Attributes:
+            model_capacity (str): The capacity of the network.
+            convolutional_blocks (nn.Sequential): A sequential container holding the convolutional blocks.
+            linear (nn.Linear): A linear layer for final mapping.
+
+        Methods:
+            forward(x): Passes an input tensor `x` through the network.
+            get_activation(audio, sr, center=True, step_size=10, batch_size=128):
+                Computes the activation stack for a given audio signal and sampling rate.
+            predict(audio, sr, center=True, step_size=10, batch_size=128):
+                Predicts pitch class labels from an input audio signal.
+
+        Note:
+            The model's capacity determines its size and complexity.
+        """
         super(Crepe, self).__init__()
 
         # Define a multiplier for the network's capacity based on the selected model size
@@ -78,6 +139,15 @@ class Crepe(nn.Module):
         self.eval()
 
     def load_weight(self, model_capacity):
+        """
+        Load the weights for a given model capacity.
+
+        Args:
+            model_capacity (str): The capacity of the network ('tiny', 'small', 'medium', 'large', or 'full').
+
+        Note:
+            The model's capacity determines its size and complexity.
+        """
         package_dir = os.path.dirname(os.path.realpath(__file__))
         filename = "crepe-{}.pth".format(model_capacity)
         try:
@@ -87,6 +157,15 @@ class Crepe(nn.Module):
             print(f"{filename} Not found.")
 
     def forward(self, x):
+        """
+        Pass an input tensor `x` through the network.
+
+        Args:
+            x (torch.Tensor): The input tensor to pass through the network.
+
+        Returns:
+            torch.Tensor: The output of the network.
+        """
         x = x.view(x.shape[0], 1, -1, 1)
 
         # Pass the input through each convolutional block sequentially
@@ -103,7 +182,19 @@ class Crepe(nn.Module):
         return x
 
     def get_activation(self, audio, sr, center=True, step_size=10, batch_size=128):
+        """
+        Compute the activation stack for a given audio signal and sampling rate.
 
+        Args:
+            audio (torch.Tensor): The input audio tensor.
+            sr (int): The sampling rate of the audio signal.
+            center (bool): Whether to center the frames around each other. Defaults to True.
+            step_size (int): The number of samples per frame. Defaults to 10.
+            batch_size (int): The batch size for computing activations.
+
+        Returns:
+            torch.Tensor: The activation stack.
+        """
         # resample to 16kHz if needed
         if sr != 16000:
             rs = torchaudio.transforms.Resample(sr, 16000)
@@ -130,6 +221,19 @@ class Crepe(nn.Module):
         return activation
 
     def predict(self, audio, sr, center=True, step_size=10, batch_size=128):
+        """
+        Predict pitch class labels from an input audio signal.
+
+        Args:
+            audio (torch.Tensor): The input audio tensor.
+            sr (int): The sampling rate of the audio signal.
+            center (bool): Whether to center the frames around each other. Defaults to True.
+            step_size (int): The number of samples per frame. Defaults to 10.
+            batch_size (int): The batch size for computing activations.
+
+        Returns:
+            tuple: A tuple containing the time, frequency, confidence, and activation stack.
+        """
         activation = self.get_activation(
             audio, sr, batch_size=batch_size, step_size=step_size)
         frequency = activation_to_frequency(activation)

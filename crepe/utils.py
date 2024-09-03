@@ -1,3 +1,5 @@
+"""This file contains various functions for processing and converting audio data and labels."""
+
 import torch
 import torch.nn as nn
 import subprocess
@@ -6,6 +8,17 @@ import os
 
 
 def get_frame(audio, step_size, center):
+    """
+    Extract audio frames from a given audio signal.
+
+    Args:
+        audio (Tensor): The input audio signal.
+        step_size (float): The time step size in milliseconds. Audio will be divided into 1024-sample frames with this hop length.
+        center (bool): If True, pads the audio to have equal number of samples on both sides.
+
+    Returns:
+        Tensor: A tensor containing the extracted audio frames, standardized to have zero mean and unit standard deviation.
+    """
     if center:
         audio = nn.functional.pad(audio, pad=(512, 512))
     # make 1024-sample frames of the audio with hop length of 10 milliseconds
@@ -26,9 +39,18 @@ def get_frame(audio, step_size, center):
 
 def to_local_average_cents(salience, center=None):
     """
-    Find the weighted average cents near the argmax bin
-    """
+    Compute the weighted average cents near the argmax bin of a salience vector.
 
+    Args:
+        salience (Tensor): A 1D or 2D tensor representing the salience values.
+        center (int, optional): The index around which to compute the weighted average. Defaults to None.
+
+    Returns:
+        Tensor: The weighted average cents near the argmax bin.
+
+    Notes:
+        This function assumes that the input salience values are normalized such that their sum equals 1.
+    """
     if not hasattr(to_local_average_cents, 'cents_mapping'):
         # The bin number-to-cents mapping
         to_local_average_cents.cents_mapping = (
@@ -49,6 +71,15 @@ def to_local_average_cents(salience, center=None):
 
 
 def activation_to_frequency(activations):
+    """
+    Convert activations to a corresponding frequency value.
+
+    Args:
+        activations (tensor): The input activations to convert.
+
+    Returns:
+        tensor: A tensor representing the frequency values.
+    """
     cents = to_local_average_cents(activations)
     frequency = 10 * 2 ** (cents / 1200)
     frequency[torch.isnan(frequency)] = 0
@@ -58,6 +89,16 @@ def activation_to_frequency(activations):
 
 
 def frequency_to_activation(frequencies, num_bins=360):
+    """
+    Convert a tensor of frequencies to a binary activation map.
+
+    Args:
+        frequencies (torch.Tensor): The input frequencies.
+        num_bins (int, optional): The number of bins in the activation map. Defaults to 360.
+
+    Returns:
+        torch.Tensor: A binary activation map where each row corresponds to the frequency in the corresponding row of `frequencies`.
+    """
     # Convert frequency to cents
     cents = 1200 * torch.log2(frequencies / 10)
 
@@ -79,7 +120,19 @@ def frequency_to_activation(frequencies, num_bins=360):
     return activations
 
 
-def load_test_file(filename, mono=False, normalize=False):
+def load_test_file(filename: str, mono: bool = False, normalize: bool = False):
+    """
+    Load a test audio file from a remote server into a PyTorch Audio tensor.
+
+    Args:
+        filename (str): The name of the audio file to download.
+        mono (bool, optional): If True, load the audio in monaural format. Defaults to False.
+        normalize (bool, optional): If True, normalize the audio signal. Defaults to False.
+
+    Returns:
+        Tuple[Tensor, int]: A tuple containing the loaded audio tensor and its sample rate.
+            If an error occurs during download or loading, returns (None, None).
+    """
     # Construct the URL for the file on your server
     url = f"https://openfileserver.chloelavrat.com/testfiles/audio/{filename}"
 
