@@ -9,7 +9,6 @@ on: [push, pull_request]
 #    tags:
 #      - 'v*.*.*'  # Adjust this pattern to match your tag format
 
-
 jobs:
   build_and_release:
     name: Build and Upload Release
