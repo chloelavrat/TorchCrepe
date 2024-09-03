@@ -1,4 +1,3 @@
-from collections import defaultdict
 from torch.utils.data import Dataset
 import os
 import torch
