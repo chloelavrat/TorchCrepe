@@ -4,7 +4,6 @@ from tqdm import tqdm
 import torch.nn.functional as F
 from crepe.utils import frequency_to_activation
 from crepe.model import Crepe
-# import wandb
 
 
 def epoch_step(model, audio, labels, sr, device):
@@ -126,14 +125,6 @@ if __name__ == "__main__":
     # set optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-    # wandb init
-    # wandb.init(project="Crepe tiny", config={
-    #     "learning_rate": learning_rate,
-    #     "architecture": "CNN",
-    #     "dataset": "MIR-1K + bach10",
-    #     "epochs": num_epoch,
-    # })
-
     best_val_loss = float('inf')
     epochs_without_improvement = 0
     accumulation_steps = 4
@@ -149,7 +140,6 @@ if __name__ == "__main__":
                 device
             )
             train_loss += tmp_loss
-            # wandb.log({"train_loss": tmp_loss})
         # compute train loss
         train_loss /= num_batches_per_epoch
 
@@ -161,8 +151,8 @@ if __name__ == "__main__":
             device
         )
 
-        print(f'Epoch {epoch}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}')
-        # wandb.log({"val_loss": val_loss})
+        print(f'Epoch {epoch}, Train Loss: {
+              train_loss:.4f}, Val Loss: {val_loss:.4f}')
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
@@ -178,4 +168,3 @@ if __name__ == "__main__":
 
     # save model
     torch.save(model.state_dict(), f'crepe/crepe_{model_capacity}_final.pth')
-    # wandb.finish()
