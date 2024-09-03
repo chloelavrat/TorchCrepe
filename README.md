@@ -14,8 +14,10 @@
   <a href="https://opensource.org/licenses/MIT">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License">
   </a>
-  <img src="https://img.shields.io/badge/python-3.10-blue.svg" alt="Python Versions">
-  <img src="https://img.shields.io/badge/pytorch-1.x-blue.svg" alt="PyTorch Versions">
+  <img src="https://img.shields.io/badge/python-3.12.4-blue.svg" alt="Python Versions">
+  <a href="https://github.com/chloelavrat/TorchCrepe/actions/workflows/CI.yml">
+    <img src="https://github.com/chloelavrat/TorchCrepe/actions/workflows/CI.yml/badge.svg" alt="CI">
+  </a>
 </div>
 
 <p align="center">The <b>Torch-CREPE</b> project re-develop the CREPE pitch estimation model in PyTorch, empowering its optimization and adaptation for real-time voice pitch detection tasks. By re-developping this deep learning-based system, we unlock new research possibilities for music signal processing and audio analysis applications.</p>
