@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "CrepeTorch"
+version = "1.0.0"
+description = "**CrepeTorch** is a fundamental frequency detector on audio."
+authors = ["Chloé Lavrat <chloe.lavrat@gmail.com>"]
+license = "Copyright (c) Chloé Lavrat 2024"
+readme = "README.md"
+packages = [{include = "crepe"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pytest = "^6.2"
+torch = "^2.4"
+torchaudio = "^2.4"
+PySoundFile = "^0.9"
+tqdm = "^4.66.4"
+
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.5"  # Example development dependency
+
+[tool.poetry.urls]
+homepage = "chloelavrat.com"
+repository = "https://github.com/chloelavrat/TorchCrepe"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
