@@ -59,6 +59,10 @@ time, frequency, confidence, activation = crepe.predict(
 
 For a detailed documentation of the PyTorch CREPE implementation, including the API and usage guidelines, please refer to [this link].
 
+## Train
+
+The model is still in my training queue so only the 'tiny' version of **Crepe** has been trained yet.
+
 ## Datasets
 
 [MIR-1K](http://mirlab.org/dataset/public/MIR-1K.zip)
